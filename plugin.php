@@ -2,7 +2,7 @@
 /*
 Plugin Name: WooCommerce Order to Slack Notifier
 Description: Sends Slack notifications when new WooCommerce orders are received
-Version: 1.2
+Version: 1.1
 Author: Shelton Chiramal
 */
 
@@ -69,7 +69,8 @@ function wc_slack_webhook_url_callback() {
     echo '<input type="text" id="wc_slack_webhook_url" name="wc_slack_webhook_url" value="' . esc_attr($webhook_url) . '" style="width: 500px;" />';
 }
 
-// ... (previous code remains the same until send_order_to_slack function)
+// Hook into WooCommerce new order
+add_action('woocommerce_new_order', 'send_order_to_slack');
 function send_order_to_slack($order_id) {
     $webhook_url = get_option('wc_slack_webhook_url');
     if (empty($webhook_url)) {
@@ -80,44 +81,24 @@ function send_order_to_slack($order_id) {
     $order_data = $order->get_data();
     $status = $order->get_status();
 
-    // Define color codes for different statuses
-    $status_colors = [
-        'pending' => '#FFA500',    // Orange for Pending Payment
-        'processing' => '#36A64F', // Green for Processing
-        'cancelled' => '#FF0000',  // Red for Cancelled
-        'default' => '#808080'     // Grey for other statuses
-    ];
-
-    // Get color based on status
-    $color = isset($status_colors[$status]) ? $status_colors[$status] : $status_colors['default'];
-
     // Format the message
     $message = sprintf(
-        "*Order #%s - %s*\n" .
+        "📦 New Order #%s\n" .
         "👤 Customer: %s %s\n" .
         "📧 Email: %s\n" .
-        "💰 Total: %s\n" .
-        "🔄 Status: `%s`\n" .        // Added raw status for debugging
-        "🔗 <%s|View Order>",
-        $order->get_order_number() - 433,
-        ucfirst($status),
+        "🔄 Status: `%s`\n" .
+        "🔗 View Order: %s",
+        $order->get_order_number(),
         $order_data['billing']['first_name'],
         $order_data['billing']['last_name'],
         $order_data['billing']['email'],
-        $order->get_formatted_order_total(),
-        $status,                     // Raw status value
+        $status,
         admin_url('post.php?post=' . $order_id . '&action=edit')
     );
 
-    // Prepare the payload using Slack's attachment format for colors
+    // Prepare the payload
     $payload = json_encode([
-        'attachments' => [
-            [
-                'color' => $color,
-                'text' => $message,
-                'fallback' => strip_tags($message)
-            ]
-        ]
+        'text' => $message,
     ]);
 
     // Send to Slack
