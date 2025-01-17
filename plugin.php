@@ -2,7 +2,7 @@
 /*
 Plugin Name: WooCommerce Order to Slack Notifier
 Description: Sends Slack notifications when new WooCommerce orders are received
-Version: 1.1
+Version: 1.3
 Author: Shelton Chiramal
 */
 
